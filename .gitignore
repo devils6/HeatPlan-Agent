@@ -1,0 +1,14 @@
+.venv/
+.env
+data/
+logs/
+outputs/
+knowledge/manuscript_extracted.*
+config/sources.json
+__pycache__/
+.pytest_cache/
+
+.browsers/
+.tools/
+
+.streamlit/secrets.toml

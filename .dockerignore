@@ -1,0 +1,15 @@
+.env
+.venv/
+.tools/
+.browsers/
+__pycache__/
+*.pyc
+.pytest_cache/
+.pytest_tmp*/
+logs/
+outputs/
+tests/
+scripts/
+docs/
+knowledge/manuscript_extracted.*
+config/sources.json

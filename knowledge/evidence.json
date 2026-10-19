@@ -1,0 +1,193 @@
+[
+  {
+    "id": "E01",
+    "title": "模拟情景与适用范围",
+    "section": "方法 2.2、研究区域 2.4",
+    "summary": "10 m 间隔、1.2 m 高度行人分析点；使用 TMY 极端高温周模拟平均 UTCI。",
+    "tags": [
+      "情景",
+      "天气",
+      "实时",
+      "UTCI",
+      "模拟"
+    ],
+    "source_paragraphs": [
+      "P29",
+      "P31",
+      "P33",
+      "P45"
+    ],
+    "source_text": "The calculation of UTCI relies on four key meteorological parameters: mean radiant temperature (MRT), air temperature, relative humidity, and wind speed (Bröde et al., 2012). Among these variables, MRT is the dominant factor governing urban heat stress during summer conditions (Anders et al., 2025). MRT simulation quantifies the radiative energy received by the human body, including shortwave radiation from solar exposure and environmental reflections, as well as longwave radiation emitted by surrounding surfaces and the sky (Schöneberger et al., 2025). Simulation points were placed along the street network of the study area at 10 m intervals, with a uniform height of 1.2 m, which is widely adopted in outdoor thermal stress studies to represent the center of mass of a standing pedestrian (Kamel, 2021). Calculations were performed using the Honeybee plugin, which integrates Radiance and EnergyPlus and whose accuracy has been validated in previous studies (Khraiwesh and Genovese, 2023).\nFor longwave radiation, surface temperatures of buildings, ground, and tree canopies were uniformly approximated by air temperature obtained from the EPW file. The EPW file used in this study is a standard meteorological data format, and its content is composed of Typical Meteorological Year (TMY) data, and in this study, the extreme heat week extracted from the file was used for simulation. This period characterizes statistically representative high-temperature meteorological conditions for the study area (Li et al., 2020), as summarized in Table 1 of Section 2.4. The Radiance engine was used to calculate view factors between each sensor and surrounding geometries, which were combined with air temperature to estimate longwave radiation contributions. Longwave radiation from the sky was calculated using the sky view factor together with sky temperature from the EPW file.\nFinally, UTCI was calculated by combining the simulated MRT with hourly wind speed, relative humidity, and air temperature from the EPW file based on the Fiala thermoregulation model. A metabolic rate of 2.3 met, corresponding to approximately 135 watts per square meter, was assumed to represent typical pedestrian activity in street environments, from which the mean UTCI during the study period was obtained.\nThe study area comprises the region within Beijing’s Fifth Ring Road, with its precise location depicted in Figure 2. This area is characterized by a temperate monsoon climate (Köppen: Dwa) with hot, humid summers. It is a densely populated urban core, accommodating 41.8% of the city's population on 4.07% of its land area (2022 data), and exhibits a pronounced urban heat island effect. The analysis was confined to the pedestrian-accessible street network as defined by OpenStreetMap, totaling 593,559 segments. In total, 545,384 UTCI analysis points were generated along these segments. Based on the meteorological data, the period from July 13 to July 19 (from the source year 2017) was identified as an extreme summer heat week. The daily timeframe of 12:30–16:30 was selected for the simulation.",
+    "source_file": "F:\\桌面\\SCS期刊投稿\\SCS文章返修\\Manuscript with Tracked Changes-1.21 - without author.docx",
+    "source_sha256": "be05d93531765b868659fce2aa77b94e4d21b74a4045c4eba36e783ce457afda",
+    "evidence_type": "论文已有结果或方法；非新模拟或局部SHAP"
+  },
+  {
+    "id": "E02",
+    "title": "10 m 指标尺度",
+    "section": "结果 3.2",
+    "summary": "论文比较5、10、15、20 m尺度，10 m综合表现最佳。第一版统一读取10 m缓冲区的8项指标；不把其他尺度的阈值混入解释。",
+    "tags": [
+      "尺度",
+      "指标",
+      "10m",
+      "缓冲区"
+    ],
+    "source_paragraphs": [
+      "P94",
+      "P99",
+      "P258"
+    ],
+    "source_text": "We compared the regression performance of morphological indicators on UTCI across multiple spatial scales. As shown in Figure 5, the 10 m neighborhood scale achieved the best overall performance. The R² reached its maximum at this scale (training/testing: 0.7762/0.7620), while MAE, MAPE, and RMSE were also at or near their lowest values (0.8150/0.8422, 2.3413%/2.4200%, and 1.2794/1.3193, respectively). Although the 5 m scale performed similarly for some metrics, the 10 m analysis unit captured a broader range of surrounding environmental features, resulting in greater predictive stability.\nAt approximately 10 m, the relationship between urban morphology and UTCI was the strongest, indicating that pedestrian heat stress is primarily governed by highly localized environmental conditions. Thermal exposure can vary substantially even within a single street segment due to differences in immediate shading, nearby tree canopies, and surrounding building form, underscoring the localized influence of urban morphology on the microclimate.\nThird, the multi-scale analysis revealed a degree of \"scale elasticity\" in morphological impacts. Our model performed similarly at 5 m and 10 m scales, but performance worsened significantly beyond 15 m. This suggests that while a scale that is too small (5 m) may provide insufficient information, one that is too large (>15 m) dilutes the impact, with 10 m striking an optimal balance. This optimal scale is likely related to Beijing's typical street cross-sections (20–30 m) and may not be a universal constant; it likely holds for high-density cities with similar layouts, while low- or ultra-high-density cities might have different optimal scales. Importantly, our method demonstrates that a data-driven approach can identify the characteristic scale of thermal response for any given city, providing scientific support for multi-scale adaptive planning. It also highlights the varied effectiveness of measures at different scales: micro-scale interventions (e.g., street trees) have the most direct impact on street-level climate, while macro-scale measures (e.g., suburban forests) have limited effects. Therefore, cities must address thermal challenges through multi-scale synergy, where micro-scale street design, local-scale parks, and macro-scale ventilation corridors complement one another.",
+    "source_file": "F:\\桌面\\SCS期刊投稿\\SCS文章返修\\Manuscript with Tracked Changes-1.21 - without author.docx",
+    "source_sha256": "be05d93531765b868659fce2aa77b94e4d21b74a4045c4eba36e783ce457afda",
+    "evidence_type": "论文已有结果或方法；非新模拟或局部SHAP"
+  },
+  {
+    "id": "E03",
+    "title": "全局 SHAP 重要性",
+    "section": "结果 3.3",
+    "summary": "全局平均绝对SHAP中，树冠覆盖率为1.449、冠层体积为0.766；建筑体积为0.178、建筑平均高度为0.117，树冠相关指标与UTCI的总体关联更强。",
+    "tags": [
+      "SHAP",
+      "重要性",
+      "贡献",
+      "建筑",
+      "树冠"
+    ],
+    "source_paragraphs": [
+      "P114",
+      "P115"
+    ],
+    "source_text": "Fig 7. (1) displays the mean absolute SHAP value for each feature, which measures its overall importance. The results clearly indicate that canopy-related indicators play a dominant role in influencing UTCI. Canopy Coverage Ratio was the primary factor, with a mean SHAP value of 1.449, followed by Canopy Volume, which was also highly significant with a value of 0.766. In contrast, the importance of building-related indicators was generally lower, with the most significant being Building Volume (0.178) and Building Mean Height (0.117). This quantitatively corroborates the intuitive understanding that tree shade is more effective than building shade; even after accounting for building obstructions, the overall impact of buildings on the pedestrian thermal environment remains far less significant than that of vegetation. This finding is consistent with previous research indicating that buildings have a limited cooling effect on their surroundings and may even contribute to warming (Kuhar and Boora, 2025). Notably, the importance of building and canopy height variances was almost negligible, suggesting that the heterogeneity of height distribution is not a primary influencing factor in itself.\nAlthough canopies were more prominent in terms of overall importance, a deeper analysis of the SHAP scatter plots for each feature (Fig 7. (2)) reveals complex nonlinear relationships. In the plots, each point represents a sample, with color indicating the feature value (red for high, blue for low). Its position on the horizontal axis represents its impact on the predicted UTCI value (a negative value indicates a decrease, while a positive value indicates an increase). For the canopy indicators, the pattern of impact is clear and consistent. Samples with high feature values (red dots) are almost entirely distributed on the left side with negative SHAP values, whereas samples with low feature values (blue dots) are concentrated on the right side with positive SHAP values. The denser the canopy and the larger its volume, the more pronounced its effect on reducing UTCI, thereby effectively mitigating thermal stress.",
+    "source_file": "F:\\桌面\\SCS期刊投稿\\SCS文章返修\\Manuscript with Tracked Changes-1.21 - without author.docx",
+    "source_sha256": "be05d93531765b868659fce2aa77b94e4d21b74a4045c4eba36e783ce457afda",
+    "evidence_type": "论文已有结果或方法；非新模拟或局部SHAP"
+  },
+  {
+    "id": "E04",
+    "title": "树冠覆盖率的非线性关联",
+    "section": "结果 3.3 与 Table 2",
+    "summary": "论文观察到约20%的转折，40%–80%区间关联较强，超过80%趋于饱和。系统按任务目标使用这些覆盖区间筛选候选并组织现场核查。",
+    "tags": [
+      "覆盖",
+      "补植",
+      "种树",
+      "20%",
+      "40%",
+      "80%",
+      "树冠"
+    ],
+    "source_paragraphs": [
+      "P123",
+      "P166",
+      "P168",
+      "P171",
+      "P173",
+      "P176",
+      "P178",
+      "P181",
+      "P183"
+    ],
+    "source_text": "Quantitatively, Fig 8(1) shows that the threshold at which UTCI begins to drop significantly occurs at a canopy coverage of around 20%. As coverage increases from 0 to 0.2, the SHAP value transitions from positive to negative, indicating that once the tree shade reaches a certain level, its cooling benefit starts to outweigh other warming factors. As coverage continues to increase to above 40%, the negative SHAP value becomes most pronounced, and the UTCI reduction is strongest. Beyond 80% coverage, the negative effect slightly diminishes, suggesting the cooling benefit approaches saturation. This suggests a threshold effect: once canopy cover in a local area exceeds roughly 20%, the cooling benefits become especially pronounced. Below that threshold, small or scattered trees still provide cooling, but the effect is more linear and modest. Once a continuous canopy is established (e.g., several mature trees shading the same area), incremental increases in canopy volume contribute disproportionately to the mitigation of thermal stress, likely because they create a compounding shade effect that effectively suppresses residual thermal radiation. Our findings here resonate with recent literature on nature-based solutions for heat mitigation. For example, systematic reviews have noted that urban tree canopy can reduce daytime air temperatures by anywhere from 2°C to 9°C, depending on context (Wong et al., 2021), and a case study found that a park with ~30% tree cover was up to 4°C cooler than its surroundings (Kotharkar and Vidyasagar, 2025). We also observed diminishing returns at extremely high canopy densities in isolated cases – for instance, a very dense cluster of trees in a confined courtyard provided excellent shade but also reduced air movement, hinting at the previously mentioned phenomenon where canopies can trap heat under low wind conditions. In our daytime scenario with moderate wind, this effect was minimal, but it suggests that urban design should aim for an optimal greening density that maximizes shade while preserving some airflow (Zhang et al., 2023). Nonetheless, in the context of Beijing’s dry, hot summer days, evapotranspiration from trees was likely limited by soil moisture and high vapor pressure deficits, meaning shading was the dominant cooling mechanism. The priority for daytime heat mitigation is therefore to increase canopy cover – our quantitative results support policies for urban greening, tree-lined streets, and preservation of existing mature trees as an effective strategy to combat urban heat.\nBelow 20%\nPrioritize increasing coverage; ensure continuous green belts.\n20%-40%\nContinue increasing coverage to over 40%.\n40%-80%\nMaintain coverage; enhance volume and height for added benefits, considering ventilation/lighting.\nAbove 80%\nFocus on volume and height; assess ventilation/lighting to avoid negative microclimates.",
+    "source_file": "F:\\桌面\\SCS期刊投稿\\SCS文章返修\\Manuscript with Tracked Changes-1.21 - without author.docx",
+    "source_sha256": "be05d93531765b868659fce2aa77b94e4d21b74a4045c4eba36e783ce457afda",
+    "evidence_type": "论文已有结果或方法；非新模拟或局部SHAP"
+  },
+  {
+    "id": "E05",
+    "title": "冠层体积与现有树冠养护",
+    "section": "结果 3.3 与 Table 2",
+    "summary": "论文中500–2000 m³区间关联较强，超过约2000 m³趋于稳定。系统结合冠层体积、覆盖率和平均树冠高度，比较现有树冠保护与培育方向。",
+    "tags": [
+      "体积",
+      "养护",
+      "保护",
+      "现有",
+      "生长",
+      "500"
+    ],
+    "source_paragraphs": [
+      "P124",
+      "P186",
+      "P188",
+      "P191",
+      "P193",
+      "P196",
+      "P198"
+    ],
+    "source_text": "For Canopy Mean Height, the SHAP analysis reveals that UTCI monotonically decreases as height increases. Taller canopies are consistently beneficial for cooling, and no obvious threshold or saturation point was observed within the 0-20 m range (Fig 8(2)). The impact of Canopy Volume is more complex but follows a trend similar to that of coverage: as volume increases from 0 to about 500 m3, the SHAP value shifts from positive to strongly negative. The cooling effect remains highly significant between 500 and 2000 m3; beyond 2000 m3, the negative effect tends to stabilize or slightly weaken (Fig 8(3)). This implies that individual or localized tree canopies must reach a certain scale to fully realize their cooling potential. Canopy Height Variance, however, has almost no systematic impact on UTCI, with its SHAP values randomly fluctuating around zero (Fig 8(4)), indicating that the unevenness of canopy height has a negligible effect on average thermal stress.\nBelow 500 m3\nPlant large-growing species or promote lush growth.\n500-2000 m3\nMaintain healthy growth for effective volume.\nAbove 2000 m3\nMaintain large canopies; consider mean height and overall ventilation/light balance.",
+    "source_file": "F:\\桌面\\SCS期刊投稿\\SCS文章返修\\Manuscript with Tracked Changes-1.21 - without author.docx",
+    "source_sha256": "be05d93531765b868659fce2aa77b94e4d21b74a4045c4eba36e783ce457afda",
+    "evidence_type": "论文已有结果或方法；非新模拟或局部SHAP"
+  },
+  {
+    "id": "E06",
+    "title": "建筑形态是案例匹配条件",
+    "section": "结果 3.4",
+    "summary": "论文结果显示建筑形态与UTCI的关联呈非线性。系统按四项建筑指标匹配条件相近的道路，并对照树冠配置与UTCI。",
+    "tags": [
+      "建筑",
+      "相似",
+      "案例",
+      "匹配",
+      "对照"
+    ],
+    "source_paragraphs": [
+      "P130",
+      "P131"
+    ],
+    "source_text": "The SHAP scatter plot for Building Coverage Ratio shows that at low coverage (<10%), most points have positive SHAP values, suggesting that sparse, isolated buildings often fail to provide adequate shade and may slightly increase heat exposure. As coverage increases to 20%–40%, most samples' SHAP values drop to negative, indicating that moderately continuous building shade begins to have a cooling effect, which aligns with our findings in moderately built-up areas (e.g., 4-6 story buildings with relatively narrow streets), where we observed a slight cooling correlation – these areas had UTCI values a bit lower than highly exposed open areas, presumably because the building walls and overhangs cast cooling shadows on the ground and reduce direct solar exposure. This supports the notion that an intermediate urban density can offer some thermal relief by blocking sun at critical times (a person walking along a street with 50% sky view factor might get shade during peak sun, unlike in an open field). However, when coverage exceeds 40%, the negative SHAP values for many points weaken or even revert to positive, implying that excessively dense construction may have adverse side effects (such as surface heat accumulation), making its overall effect less beneficial than that of moderate density (Fig 9(1)) – a pattern echoed in high-rise, high-density districts, where the correlation reversed, with locations featuring very tall buildings (over ~15-20 stories, typical in Beijing’s CBD or apartment complexes) tending to show higher UTCI values compared to their surroundings. Our interpretation is that in these areas the negative effects — limited ventilation and trapped heat — outweigh the shading benefits, as wind measurements and model output indicate that street canyons with high aspect ratios had significantly lower wind speeds at pedestrian level (often near stagnant conditions), impeding convective heat dissipation. Moreover, multiple reflections between tall façades increase the MRT; even if direct sun is reduced, the surrounding surfaces heat up and radiate longwave energy back to the pedestrian, essentially creating the “urban radiation trap” effect and contributing to a buildup of heat within the canyon. Thus, our data confirms a dual role of urban form: while some enclosure is beneficial to reduce radiation, too much enclosure without ventilation leads to overheating. These findings are consistent with prior studies that report nonlinear relationships between building density and outdoor temperature – e.g., an optimal canyon geometry might exist at which daytime shading and nighttime cooling are balanced, but beyond which additional density causes net warming (Elkhayat et al., 2025). In our case, we did not explicitly simulate night conditions, but we anticipate that high-rise areas would also cool slower after sunset due to trapped heat, as observed in other cities.\nThe nonlinear impact of Building Mean Height on UTCI shows a similar pattern: low heights have almost no effect, while an increase to 10-40 m generally enhances the negative (cooling) effect. However, even within this range, some points still exhibit positive SHAP values, reflecting the highly heterogeneous nature of the height effect (Fig 9(2)). Above 40 m, the negative effect tends to saturate and its fluctuation increases, suggesting that very tall buildings may have multiple impacts on the pedestrian thermal environment: on one hand, they provide more shade, but on the other, high walls can lead to more prominent reflection and heat-trapping effects. Building Volume, which essentially reflects the combined scale of building footprint and height, shows the following SHAP relationship: when the total volume is very small (<1000 m3, equivalent to only low-rise buildings), SHAP values are inconsistent. As the volume increases to approximately 1000-3000 m3, most points’ SHAP values quickly turn negative and stabilize, indicating that buildings provide more consistent cooling once they reach a certain scale. However, beyond 3000 m3 (equivalent to large, high-volume buildings), the negative effect no longer intensifies and may even slightly decrease (Fig 9(3)). This aligns with the findings for mean height, confirming that building scale has diminishing or even reversing marginal effects on cooling. As for Building Height Variance, its SHAP distribution is almost symmetrical around zero (Fig 9(4)), indicating that the variation in building heights itself is not a significant factor affecting the thermal environment. This implies that, for a given coverage ratio and total volume, a uniform group of high-rise or low-rise buildings has a similar average impact on pedestrian thermal stress as a group with varied heights.",
+    "source_file": "F:\\桌面\\SCS期刊投稿\\SCS文章返修\\Manuscript with Tracked Changes-1.21 - without author.docx",
+    "source_sha256": "be05d93531765b868659fce2aa77b94e4d21b74a4045c4eba36e783ce457afda",
+    "evidence_type": "原论文背景依据 + 系统方法设计；不是原论文实施的匹配试验"
+  },
+  {
+    "id": "E07",
+    "title": "研究局限与现场验证",
+    "section": "局限 4.4",
+    "summary": "模拟采用统一背景气象和简化表面温度；未显式模拟夜间、季节变化、人为热及物种特异蒸腾；北京实地验证尚不充分。局地风、土壤、树木健康与施工条件都需要现场核查。",
+    "tags": [
+      "局限",
+      "验证",
+      "现场",
+      "因果",
+      "不确定",
+      "风",
+      "限制"
+    ],
+    "source_paragraphs": [
+      "P30",
+      "P32",
+      "P261"
+    ],
+    "source_text": "To determine an appropriate calculation strategy, a preliminary analysis was conducted in a test area of approximately 3 ha, where 1,000 points were randomly selected. Two MRT calculation approaches were compared: one using dynamically simulated surface temperatures from EnergyPlus, and the other applying a simplified assumption in which all surface temperatures were set equal to air temperature, followed by calculation of MRT and UTCI. The results show strong agreement between the two approaches, with a coefficient of determination of R² = 0.9129 (see Appendix S2.2), indicating that geometric shading effects from buildings and tree canopies dominate thermal stress at the study scale. Considering both accuracy and computational efficiency, the simplified approach was adopted for subsequent simulations within Beijing’s Fifth Ring Road.\nRegarding wind speed, Beijing is located in a temperate monsoon climate zone and is frequently influenced by subtropical high-pressure systems during summer heatwaves, resulting in high temperatures, stable atmospheric stratification, and relatively low background wind speeds. The EPW file provides wind speed measured at a height of 10 m. During UTCI calculation, the Honeybee UTCI Comfort Map component converts the 10 m wind speed from the EPW file into pedestrian-level wind speed at a height of 1.2 m. Statistical analysis of the 1.2 m wind speed indicates that during the study period, 84.00 percent of hourly wind speeds did not exceed 2.00 m per second, all hourly values were below 3.00 m per second, and the mean wind speed was 1.44 m per second, corresponding to Beaufort scale force 1.In addition, hourly ERA5 wind speed data during the simulation period were introduced for sensitivity analysis. The results indicate that fluctuations in MRT led to a UTCI variation of 8.77 degrees Celsius, whereas variations in wind speed resulted in a much smaller UTCI change of minus 1.26 degrees Celsius, as reported in Appendix S2.1. Accordingly, wind speed data from the EPW file were adopted as the input for UTCI calculations.\nDespite its strengths, our framework has several limitations. First, the simulations were confined to idealized summer daytime conditions and did not explicitly model nighttime cooling or seasonal variations; consequently, phenomena like nocturnal heat retention under dense canopies or the thermal inertia of building materials were not captured. Second, to manage computational load, we made simplifying assumptions (e.g., using uniform meteorological data such as humidity and wind speed from a single weather station), which may introduce errors in absolute UTCI values, and did not account for anthropogenic heat or species-specific evapotranspiration rates. Additionally, future research could leverage higher-precision data to construct more anatomically accurate models including precise canopy profiles, trunk heights, and crown architectures to further refine micro-scale shading and airflow simulations. Third, the model has not been extensively validated against field measurements in Beijing, which is crucial for refining parameter settings (e.g., surface temperatures, wind profiles). Finally, while our optimized 10 m scale appears robust for Beijing's high-density form, its generalizability to other cities requires further investigation. Future work should extend this framework by simulating a wider range of meteorological scenarios (including nighttime and heatwaves), incorporating dynamic feedbacks (e.g., greenery's impact on humidity and wind), and validating the results with on-site microclimate data to confirm our findings and improve the model's applicability across diverse urban environments.",
+    "source_file": "F:\\桌面\\SCS期刊投稿\\SCS文章返修\\Manuscript with Tracked Changes-1.21 - without author.docx",
+    "source_sha256": "be05d93531765b868659fce2aa77b94e4d21b74a4045c4eba36e783ce457afda",
+    "evidence_type": "论文已有结果或方法；非新模拟或局部SHAP"
+  },
+  {
+    "id": "E08",
+    "title": "热应激分级与筛选",
+    "section": "结果 3.1 图3",
+    "summary": "按论文图3口径，32<UTCI≤38为强热应激，38<UTCI≤46为很强热应激。用户可按任务目标设置筛选范围。",
+    "tags": [
+      "风险",
+      "高温",
+      "热应激",
+      "热点",
+      "筛选",
+      "优先",
+      "38"
+    ],
+    "source_paragraphs": [
+      "P80",
+      "P84",
+      "P251"
+    ],
+    "source_text": "Fig 3. (1) illustrates the simulation results for the area within Beijing's Fifth Ring Road during the afternoon hours of the extreme heat week. The street-level outdoor thermal environment exhibits significant spatial heterogeneity. Among the 545,384 total street analysis points, the overall mean UTCI was 34.93 °C with a variance of 7.31 °C2. The values ranged from a low of 31.57 °C to a high of 38.36 °C, with an interquartile range between 31.95 °C (25th percentile) and 37.81 °C (75th percentile). This wide distribution demonstrates substantial spatial heterogeneity in street-level thermal stress. The UTCI on most streets remained above 30 °C, implying that pedestrians in most areas were under significant heat stress during these extreme heat conditions.\nFigure 3. (1) Spatial distribution pattern of UTCI in Beijing's Fifth Ring Road; (2) Spatial distribution pattern of UTCI in Beijing's Fifth Ring Road (UTCI ≤ 32: No thermal stress to Moderate heat stress); (3) Spatial distribution pattern of UTCI in Beijing's Fifth Ring Road (32 < UTCI ≤ 38: Strong heat stress); (4) Spatial distribution pattern of UTCI in Beijing’s Fifth Ring Road (38 < UTCI ≤ 46: Very strong heat stress).\nThe pronounced spatial heterogeneity of urban microclimates and their socioeconomic correlations represent key challenges in heat exposure research. Within Beijing’s Fifth Ring Road, the street-level thermal environment displays substantial variability. Under identical extreme heat conditions, the mean UTCI across all analyzed points was 34.93 °C, with a high variance of 7.31 °C² and a range from 31.57 °C to 38.36 °C. These results indicate that pedestrian thermal stress varies markedly across locations, with most streets exceeding a UTCI of 30 °C—reflecting widespread and physiologically demanding conditions. Spatial pattern analysis further reveals that moderate and strong heat stress zones exhibit pronounced spatial continuity, forming the general background thermal field. In contrast, very strong heat stress zones (UTCI > 38 °C) appear as discrete, localized hotspots, offering a quantitative basis for prioritizing targeted interventions in vulnerable urban areas.",
+    "source_file": "F:\\桌面\\SCS期刊投稿\\SCS文章返修\\Manuscript with Tracked Changes-1.21 - without author.docx",
+    "source_sha256": "be05d93531765b868659fce2aa77b94e4d21b74a4045c4eba36e783ce457afda",
+    "evidence_type": "论文已有结果或方法；非新模拟或局部SHAP"
+  }
+]
