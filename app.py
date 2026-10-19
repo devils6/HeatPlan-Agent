@@ -57,10 +57,19 @@ for key, value in dict(report=None, previous_report=None, messages=[], agent_ins
     agent_fingerprint="", online_turns=0, pending_action=None, pending_request="", result_revision=0,
     focus_id=None, inspected_id=None, last_error="", request_context="followup", workspace_step=STEPS[0],
     chat_page_open=False, street_search_results=[], street_search_term="", street_search_district="",
-    street_search_choice=0, inspected_street_summary=None, session_web_search_api_key="",
+    street_search_choice=0, inspected_street_summary=None, street_map_focus_ids=[],
+    street_map_focus_override=False, street_map_focus_district="", session_web_search_api_key="",
     street_policy_search_key=None, street_policy_search_result=None, street_policy_search_error="",
     pending_external_sources=[],active_external_sources=[],project_context=None,project_chat_history=[],connection_notice='',api_prompt=False).items():
     if key not in ss: ss[key] = value
+
+def clear_street_map_focus():
+    ss.street_map_focus_ids=[]
+    ss.street_map_focus_override=False
+    ss.street_map_focus_district=""
+    ss.inspected_id=None
+    ss.inspected_street_summary=None
+
 if ss.get('runtime_revision')!=runtime_revision:
     ss.agent_instance=None;ss.agent_fingerprint='';ss.online_turns=0
     ss.runtime_revision=runtime_revision
@@ -497,9 +506,9 @@ if ss.workspace_step==STEPS[0]:
     with left:
         with st.container(border=True):
             st.markdown("### 先告诉我，你想解决什么")
-            st.selectbox("治理区域",list(analysis.districts().district)+["全部区域"],key="task_district")
+            st.selectbox("治理区域",list(analysis.districts().district)+["全部区域"],key="task_district",on_change=clear_street_map_focus)
             st.text_area("这次想重点解决什么？（可选）",key="task_sentence",height=115,
-                placeholder="例如：希望改善步行遮阴，不能新增树木；也想结合附近更新项目一起做。")
+                placeholder="我想了解哪些道路最热、适合采取哪些改善措施，以及有没有类似的街道更新或绿化改造项目可以参考。")
             with st.expander("分析范围与数量"):
                 st.selectbox("热应激范围",RISKS,key="task_risk")
                 if ss.task_risk==RISKS[3]:
@@ -516,11 +525,16 @@ if ss.workspace_step==STEPS[0]:
         with st.form("street_name_search",clear_on_submit=False):
             search_col,submit_col=st.columns([4,1])
             with search_col:
-                search_name=st.text_input("街道名称",key="street_search_query",placeholder="输入道路名称，例如：建国路")
+                search_name=st.text_input("街道名称",key="street_search_query",placeholder="输入道路名称，例如：三里屯")
             with submit_col:
                 st.markdown("<div style='height:28px'></div>",unsafe_allow_html=True)
                 submitted=st.form_submit_button("搜索街道",width="stretch")
         if submitted:
+            ss.street_map_focus_ids=[]
+            ss.street_map_focus_override=False
+            ss.street_map_focus_district=ss.task_district
+            ss.inspected_id=None
+            ss.inspected_street_summary=None
             ss.street_search_term=search_name.strip()
             ss.street_search_district=ss.task_district
             ss.street_search_choice=0
@@ -538,6 +552,7 @@ if ss.workspace_step==STEPS[0]:
             if len(search_results)==20:
                 st.caption("当前显示前20条匹配道路；输入更完整的名称可缩小范围。")
             selected_idx=st.selectbox("匹配道路",range(len(search_results)),key="street_search_choice",
+                on_change=clear_street_map_focus,
                 format_func=lambda i:f"{search_results[i]['street_name']} · {search_results[i]['district']} · 均值 {search_results[i]['mean_utci']:.2f}°C")
             road=search_results[selected_idx]
             st.markdown(f"#### {esc(road['street_name'])} · {esc(road['district'])}")
@@ -550,6 +565,9 @@ if ss.workspace_step==STEPS[0]:
             if st.button("查看这条道路的最高热应激位置",key="inspect_searched_street",width="stretch"):
                 ss.inspected_id=int(road["hottest_point_id"])
                 ss.inspected_street_summary=road
+                ss.street_map_focus_ids=list(road["street_ids"])
+                ss.street_map_focus_override=True
+                ss.street_map_focus_district=road["district"]
                 st.rerun()
             if road.get("street_name") and road["street_name"] not in ("未命名道路","未命名街段"):
                 policy_key=(road["district"],int(road["street_id"]))
@@ -581,10 +599,20 @@ if ss.workspace_step==STEPS[0]:
                             if st.button('继续结合这些项目讨论',key='discuss_road_policy',width='stretch'):
                                 open_policy_chat(f"请结合{road['street_name']}的空间对照与改造案例，比较不同治理方向的优先顺序。",policy_result['results'],road,policy_result.get('internal_references'))
                                 st.rerun()
+        if ss.street_map_focus_override and ss.street_map_focus_district!=ss.task_district:
+            clear_street_map_focus()
+        map_focus_ids=(ss.street_map_focus_ids if ss.street_map_focus_override
+            else (road["street_ids"] if search_results else []))
         with st.spinner(f"正在加载{ss.task_district}道路热环境…"):
-            selected=render_network(analysis,ss.task_district,[],ss.inspected_id,ss.result_revision,context="home",compact=True)
+            selected=render_network(analysis,ss.task_district,[],ss.inspected_id,ss.result_revision,context="home",compact=True,focus_street_ids=map_focus_ids)
         if selected is not None:
-            ss.inspected_id=selected;ss.inspected_street_summary=None;st.rerun()
+            ss.inspected_id=selected
+            ss.inspected_street_summary=None
+            focused=analysis.query("SELECT DISTINCT street_id FROM points WHERE point_id=? AND data_usable",[int(selected)])
+            ss.street_map_focus_ids=sorted({int(sid) for sid in focused.street_id.tolist()})
+            ss.street_map_focus_override=bool(ss.street_map_focus_ids)
+            ss.street_map_focus_district=ss.task_district
+            st.rerun()
         if ss.inspected_id:
             with st.container(border=True):inspected_location(ss.inspected_id)
     st.caption("数据：北京五环内道路 · 极端高温周模拟 · UTCI表示人体热应激水平")

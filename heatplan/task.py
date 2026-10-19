@@ -3,7 +3,7 @@ import math
 from copy import deepcopy
 
 GOALS = {"综合治理诊断": "comprehensive", "优先改善低树冠覆盖": "low_cover", "保护与改善现有树冠": "protect", "相似街道对照": "compare"}
-RISKS = ["全部热应激等级", "强热应激及以上（>32°C）", "很强热应激（>38°C）", "自定义阈值"]
+RISKS = ["全部热应激等级", "强热应激及以上（>32°C）", "非常强热应激（>38°C）", "自定义阈值"]
 CONSTRAINTS = ["仅绿化改善，不调整建筑", "不新增树木，保护与改善现有树冠", "由 AI 根据证据选择候选方向"]
 DIRECTIONS = {"更高的树冠覆盖": "higher_cover", "更大的冠层体积": "higher_volume", "不同的树冠配置": "different"}
 

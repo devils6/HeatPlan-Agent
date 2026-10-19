@@ -55,6 +55,7 @@ class Analysis:
             where+=" AND district=?"
             params.append(district)
         frame=self.query(f"""SELECT district,arg_max(street_id,utci) AS street_id,street_name,
+            list(DISTINCT street_id ORDER BY street_id) AS street_ids,
             count(DISTINCT street_id) AS segment_count,
             count(*) AS point_count,avg(utci) AS mean_utci,min(utci) AS min_utci,max(utci) AS max_utci,
             arg_max(point_id,utci) AS hottest_point_id,
@@ -63,6 +64,7 @@ class Analysis:
             ORDER BY mean_utci DESC,max_utci DESC,street_name,street_id LIMIT ?""",params+[int(limit)])
         results=records(frame)
         for row in results:
+            row["street_ids"]=sorted(int(sid) for sid in (row.get("street_ids") or []))
             mean=float(row["mean_utci"]);maximum=float(row["max_utci"])
             count=int(row["point_count"]);strong=int(row["strong_heat_points"])
             row["mean_heat_grade"]=heat_stress_grade(mean)

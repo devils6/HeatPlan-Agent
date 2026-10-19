@@ -125,14 +125,16 @@ def map_payload(district,feature,mode,stamp):
                           u=f"{seg['utci']:.2f} °C" if seg['utci'] is not None else '无关联数据',v=f'{value:.4g}' if value is not None else '缺测'))
     return items,lo,hi
 
-def render_network(analysis,district,candidates,focus_id,revision,context='diagnosis',compact=False):
+def render_network(analysis,district,candidates,focus_id,revision,context='diagnosis',compact=False,focus_street_ids=None):
     mode='UTCI 热应激分布';feature=None
     if not compact:
         mode=st.radio('地图图层',['UTCI 热应激分布','八项城市形态指标','本轮治理候选'],horizontal=True,key='map_layer')
         if mode=='八项城市形态指标':feature=st.selectbox('形态指标',list(FEATURES),format_func=lambda k:FEATURES[k][0],key='map_feature')
     segments,lo,hi=map_payload(district,feature,mode,DB_PATH.stat().st_mtime)
     ids={r['point_id'] for r in candidates}
-    highlights=[{**s,'c':[255,159,46,255] if s['i']==focus_id else [107,65,176,255]} for s in segments if s['i'] in ids or (focus_id is not None and s['i']==focus_id)]
+    focus_street_ids={int(sid) for sid in (focus_street_ids or [])}
+    highlights=[{**s,'c':([255,159,46,255] if s['i']==focus_id else [255,139,49,255] if s['s'] in focus_street_ids else [107,65,176,255])}
+                for s in segments if s['i'] in ids or s['s'] in focus_street_ids or (focus_id is not None and s['i']==focus_id)]
     # A near-transparent wider path provides reliable pointer targets without
     # making the entire heat map thick. Both layers use the same real geometry.
     hit_data=[{k:v for k,v in s.items() if k!='c'} for s in segments if s['i'] is not None]
@@ -148,6 +150,17 @@ def render_network(analysis,district,candidates,focus_id,revision,context='diagn
     lat=math.degrees(2*math.atan(math.exp((y1+y2)/2))-math.pi/2)
     dx=max((bounds['east']-bounds['west'])/360,1e-6);dy=max((y2-y1)/(2*math.pi),1e-6)
     zoom=min(math.log2(540/(512*dx)),math.log2((350 if compact else 420)/(512*dy)),14)
+    if focus_street_ids:
+        placeholders=",".join("?" for _ in focus_street_ids)
+        focus_bounds=analysis.query(f"SELECT min(longitude) west,max(longitude) east,min(latitude) south,max(latitude) north FROM points WHERE data_usable AND street_id IN ({placeholders})",sorted(focus_street_ids))
+        if not focus_bounds.empty and pd.notna(focus_bounds.iloc[0].west):
+            west,east=float(focus_bounds.iloc[0].west),float(focus_bounds.iloc[0].east)
+            south,north=float(focus_bounds.iloc[0].south),float(focus_bounds.iloc[0].north)
+            lon=(west+east)/2
+            fy1,fy2=mercator_y(south),mercator_y(north)
+            lat=math.degrees(2*math.atan(math.exp((fy1+fy2)/2))-math.pi/2)
+            fdx=max((east-west)/360,1e-6);fdy=max((fy2-fy1)/(2*math.pi),1e-6)
+            zoom=min(math.log2(540/(512*fdx)),math.log2((350 if compact else 420)/(512*fdy)),16)
     if not compact and focus_id and st.toggle('放大查看所选区间',key='zoom_candidate'):
         row=analysis.query('SELECT longitude,latitude FROM points WHERE point_id=?',[int(focus_id)])
         if not row.empty:lon,lat,zoom=float(row.iloc[0].longitude),float(row.iloc[0].latitude),16
@@ -158,7 +171,9 @@ def render_network(analysis,district,candidates,focus_id,revision,context='diagn
     if mode!='本轮治理候选':
         unit=FEATURES[feature][1] if feature else '°C'
         st.markdown(f'<div style="height:7px;border-radius:6px;background:linear-gradient(90deg,#2da670,#da433a)"></div><div style="display:flex;justify-content:space-between;font-size:.76rem;margin:4px 0"><span>{lo:.3g} {unit}</span><span>{hi:.3g} {unit}</span></div>',unsafe_allow_html=True)
-    st.caption(f'{district}全部 {len(segments):,} 个道路着色区间 · 绿色至红色连续渐变' if mode!='本轮治理候选' else f'{district}全部 {len(segments):,} 个道路着色区间 · 紫色为候选，橙色为当前查看位置')
+    caption=(f'{district}全部 {len(segments):,} 个道路着色区间 · 绿色至红色连续渐变' if mode!='本轮治理候选' else f'{district}全部 {len(segments):,} 个道路着色区间 · 紫色为候选，橙色为当前查看位置')
+    if focus_street_ids:caption+=' · 橙色高亮为当前道路'
+    st.caption(caption)
     for objects in event.selection.objects.values():
         for obj in objects:
             pid=obj.get('i');token=(key,pid)
