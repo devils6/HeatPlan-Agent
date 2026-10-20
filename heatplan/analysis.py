@@ -42,6 +42,31 @@ class Analysis:
     def districts(self):
         return self.query("SELECT district,count(*) n,avg(utci) mean_utci FROM points GROUP BY district ORDER BY n DESC")
 
+    def rank_hottest_streets(self,district="全部区域",count=5):
+        """Rank named roads by mean simulated UTCI using all usable points."""
+        start=time.perf_counter()
+        valid=set(self.districts().district)|{"全部区域"}
+        if district not in valid:raise ValueError("行政区不在研究范围内："+str(district))
+        if not 1<=int(count)<=10:raise ValueError("道路数量须为1–10")
+        where="p.data_usable"
+        params=[]
+        if district!="全部区域":where+=" AND p.district=?";params.append(district)
+        rows=self.query(f"""WITH usable AS (
+            SELECT p.district,p.street_id,p.point_id,p.utci,
+                CASE WHEN trim(coalesce(p.street_name,''))='' THEN '未命名道路 S'||CAST(p.street_id AS VARCHAR)
+                     ELSE trim(p.street_name) END AS road_name
+            FROM points p WHERE {where}
+          )
+          SELECT district,road_name AS street_name,count(*) AS analysis_point_count,
+            count(DISTINCT street_id) AS segment_count,avg(utci) AS mean_utci,
+            max(utci) AS max_utci,arg_max(point_id,utci) AS hottest_point_id,
+            arg_max(street_id,utci) AS hottest_segment_id
+          FROM usable GROUP BY district,road_name
+          ORDER BY mean_utci DESC,max_utci DESC,street_name LIMIT ?""",params+[int(count)])
+        result={"district":district,"ranking_basis":"按道路全部有效分析点的平均UTCI降序；同时列出道路内最高模拟点。",
+            "returned":len(rows),"streets":records(rows)}
+        return self._finish("rank_hottest_streets",{"district":district,"count":int(count)},result,start)
+
     def search_streets(self, name, district="全部区域", limit=20):
         """Find named streets and summarize their full set of usable analysis locations."""
         term=str(name or "").strip()

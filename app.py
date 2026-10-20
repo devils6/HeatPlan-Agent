@@ -4,6 +4,7 @@ import json
 import hashlib
 import time
 import importlib
+import logging
 from pathlib import Path
 from contextlib import nullcontext
 from copy import deepcopy
@@ -182,11 +183,11 @@ def pick_candidate():
 @st.dialog("连接与数据说明", width="large")
 def settings_dialog():
     if ss.session_api_key:
-        st.write("本浏览器会话已应用 DeepSeek 密钥，可用于对话和项目检索。")
+        st.write(f"本浏览器会话已连接 DeepSeek，当前对话模型：{ss.session_model or model_id}。")
     elif api_key and server_key_enabled:
-        st.write("当前部署启用了服务端密钥。评委也可以粘贴自己的密钥，使用自己的额度。")
+        st.write(f"当前部署已连接 DeepSeek，当前对话模型：{model_id}。评委也可以粘贴自己的密钥，使用自己的额度。")
     else:
-        st.write("粘贴你自己的 DeepSeek 密钥，启用对话和项目检索。密钥只保留在本次浏览器会话中。")
+        st.write(f"粘贴你自己的 DeepSeek 密钥，启用对话和项目检索。当前默认模型：{model_id}；密钥只保留在本次浏览器会话中。")
     with st.form('deepseek_connection_form'):
         key = st.text_input("DeepSeek API 密钥", type="password",placeholder='粘贴密钥后，点击下方按钮')
         apply_key=st.form_submit_button('应用并检查连接',type='primary',width='stretch')
@@ -197,7 +198,7 @@ def settings_dialog():
             # Do not write a visitor's secret into the shared deployment.
             # Streamlit session_state is isolated per browser session.
             ss.session_api_key=key.strip();ss.session_model=connected_model
-            ss.agent_instance=None;ss.connection_notice='DeepSeek 连接成功。密钥已应用，对话和项目检索均可使用。'
+            ss.agent_instance=None;ss.connection_notice=f'DeepSeek {connected_model} 连接成功。密钥已应用，对话和项目检索均可使用。'
             st.rerun()
         except ConnectionError as exc:st.error(str(exc))
         except OSError:
@@ -239,7 +240,7 @@ def api_required_dialog():
             with st.spinner('正在检查 DeepSeek 连接…'):
                 connected_model=check_connection(key.strip(),model_id)
             ss.session_api_key=key.strip();ss.session_model=connected_model
-            ss.agent_instance=None;ss.connection_notice='DeepSeek 连接成功，可以开始 AI 分析。'
+            ss.agent_instance=None;ss.connection_notice=f'DeepSeek {connected_model} 连接成功，可以开始 AI 分析。'
             st.rerun()
         except ConnectionError as exc:
             st.error(str(exc))
@@ -332,7 +333,13 @@ if ss.pending_action:
     except Exception as exc:
         analysis.last_report=previous_analysis_report;analysis.no_new_trees=previous_policy
         ss.agent_instance=None
-        ss.last_error=str(exc) if isinstance(exc,ConnectionError) else f"本轮任务未完成（{type(exc).__name__}）。请重试；上一轮结果仍保留。"
+        if isinstance(exc,ConnectionError):
+            ss.last_error=str(exc)
+        elif isinstance(exc,ValueError):
+            ss.last_error=f"这次查询没有完成：{exc}。请重试；上一轮结果仍保留。"
+        else:
+            logging.getLogger(__name__).exception("HeatPlan request failed")
+            ss.last_error="这次查询遇到内部错误，上一轮结果仍保留。请稍后重试。"
         ss.messages.append({"role":"assistant","content":ss.last_error,"thinking_seconds":round(time.perf_counter()-thinking_started,1)})
     finally:
         if thinking_slot is not None:

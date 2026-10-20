@@ -88,18 +88,6 @@ def verified_chat_summary(report):
         lines.append("- 本轮已按“禁止新增树木”重新比较措施，保留原候选地点；不适用的补植方向已在措施表中标出，现有树冠保护、培育或进一步调查仍需逐点判断。")
     return "\n\n".join(lines)
 
-CAPABILITY_ANSWER = """我是 HeatPlan 研究顾问，已经读入道路热环境、建筑与树冠形态指标，以及论文中的研究证据。
-
-我可以帮你完成五类工作：
-
-• 识别一个区域里不同类型的高温道路，说明每类道路的形态特征。
-• 比较补植与连续遮阴、保护和培育现有树冠、建筑与树冠协同等治理方向。
-• 用八项指标匹配形态相似空间，或比较建筑条件相近、树冠配置不同的道路及已有模拟 UTCI。
-• 根据你的管理要求重新比较方案，例如只做绿化、不能新增树木，或指定某一处道路。
-• 检索北京、其他城市及国际街道改造经验，把实际措施与目标道路问题联系起来，给出参考理由和来源链接。
-
-你可以直接说区域、道路编号或治理要求，我会先整理任务，再调用对应的数据和论文证据。"""
-
 def make_tools(analysis):
     @tool
     def find_hotspots(district:str,min_utci:float|None=None,count:int|None=None,existing_canopy_only:bool|None=None,max_canopy_cover:float|None=None,min_canopy_cover:float|None=None)->dict:
@@ -122,6 +110,14 @@ def make_tools(analysis):
             existing_canopy_only if existing_canopy_only is not None else d.get("existing_canopy_only",False),
             max_canopy_cover if max_canopy_cover is not None else d.get("max_canopy_cover",1.),
             min_canopy_cover if min_canopy_cover is not None else d.get("min_canopy_cover",0.))
+    @tool
+    def rank_hottest_streets(district:str="全部区域",count:int=5)->dict:
+        """回答“某区哪里最热”时，按真实道路全体可用模拟点的平均UTCI排序。
+        Args:
+            district: 研究范围内行政区，或“全部区域”。
+            count: 返回道路数，1至10。
+        """
+        return analysis.rank_hottest_streets(district,count)
     @tool
     def select_location(point_id:int)->dict:
         """用户明确从地图指定单个位置时选定真实分析对象，然后需补齐形态、参考案例与论文证据。
@@ -183,7 +179,7 @@ def make_tools(analysis):
         analysis.preserve_targets=keep_locations
         return analysis._finish("set_governance_constraint",dict(no_new_trees=no_new_trees,keep_locations=keep_locations),
             {"no_new_trees":no_new_trees,"keep_locations":keep_locations,"next":"重新调用analyze_morphology比较受影响措施；未补齐时方案不能完成。"},start)
-    return [find_hotspots,select_location,analyze_morphology,find_similar_streets,get_research_evidence,search_road_policy,compare_locations,set_governance_constraint]
+    return [find_hotspots,rank_hottest_streets,select_location,analyze_morphology,find_similar_streets,get_research_evidence,search_road_policy,compare_locations,set_governance_constraint]
 
 def make_agent(analysis,api_key,base_url,model_id,model_override=None):
     if not api_key and model_override is None:raise ValueError("尚未配置DeepSeek API密钥")
@@ -192,6 +188,8 @@ def make_agent(analysis,api_key,base_url,model_id,model_override=None):
              extra_body={"thinking":{"type":"disabled"}})
     instructions=(ROOT/"knowledge/agent_rules.md").read_text(encoding="utf-8")
     def complete(answer,memory,agent):
+        if getattr(analysis,"allow_pure_chat",False) and getattr(analysis,"simple_hotspot_lookup",False):
+            return True
         if getattr(analysis,"allow_pure_chat",False) and not analysis.calls[analysis.turn_start:]:
             return True
         try:
@@ -212,6 +210,7 @@ def update_existing_policy(text,current):
 def run_online(agent,analysis,request,defaults,reset=False,task=None):
     analysis.turn+=1;start=len(analysis.calls)
     analysis.last_explanation_error=None
+    analysis.simple_hotspot_lookup=False
     analysis.turn_start=start;analysis.turn_request=request;analysis.turn_defaults=dict(defaults)
     analysis.existing_only=bool(defaults["existing_canopy_only"])
     analysis.turn_task=deepcopy(task)
@@ -234,12 +233,29 @@ def run_online(agent,analysis,request,defaults,reset=False,task=None):
         context+="\n已有核验方案（可复用，不冒充本轮重新筛选）："+json.dumps({"time":previous["generated_at"],"filters":previous["hotspots"]["filters"],
           "candidates":[{"point_id":p["point_id"],"problem_type":p["problem_type_name"]} for p in previous["hotspots"]["candidates"]]},ensure_ascii=False)
     context+="\n用户请求："+request
-    if getattr(analysis,"allow_pure_chat",False) and re.search(r"你能|能结合|能做什么|哪些工作|能力",request):
-        previous_hotspots=(previous or {}).get("hotspots",{"candidates":[],"returned":0})
-        return {"generated_at":None,"mode":agent.heatplan_mode,"request":request,
-                "model_text":CAPABILITY_ANSWER,"trace":[],"task_kind":"conversation",
-                "hotspots":deepcopy(previous_hotspots)}
+    simple_hotspot_lookup=bool(getattr(analysis,"allow_pure_chat",False) and re.search(
+        r"(?:哪里|哪些地方|哪条路|哪段路).{0,12}(?:最热|高温|热)|(?:最热|高温热点).{0,12}(?:在哪里|在哪|道路|街道)",request))
+    if simple_hotspot_lookup:
+        analysis.simple_hotspot_lookup=True
+        district=next((str(d) for d in analysis.districts().district if str(d) in request),"全部区域")
+        context+=(f"\n本轮是直接道路热度查询，目标区域为{district}。请调用rank_hottest_streets一次，按道路平均模拟UTCI从高到低回答，并可补充每条道路内最高分析点的数值；"
+            "不要将此查询扩展成治理方案，不要要求补齐形态、案例或论文证据，也不要引用工具结果以外的数值。")
+    capability_question=bool(getattr(analysis,"allow_pure_chat",False) and re.search(
+        r"你能|能结合|能做什么|哪些工作|能力|可以查|能看哪些|支持哪些区域|哪些区域",request))
+    if capability_question:
+        areas=analysis.districts().district.astype(str).tolist()
+        context+=("\n本地数据覆盖区域："+"、".join(areas)+"，也可以查询全部区域。"
+            "用户本轮只在询问HeatPlan的能力或数据范围，没有要求实际分析。请用自然、简洁的中文，结合这些真实区域和本系统已接入的道路UTCI、八项建筑/树冠形态指标、论文证据、相似空间比较及道路项目检索能力回答；"
+            "可以建议用户给出一个区域或道路名称继续。不要复制固定清单，不要声称已经查询或分析，也不要调用研究工具。")
     answer=agent.run(context,reset=reset)
+    if simple_hotspot_lookup:
+        rank_calls=[c for c in analysis.calls[start:] if c["tool"]=="rank_hottest_streets"]
+        previous_hotspots=(previous or {}).get("hotspots",{"candidates":[],"returned":0})
+        if not rank_calls:
+            answer="这次没有完成道路热度排序，请重试。"
+        return {"generated_at":None,"mode":agent.heatplan_mode,"request":request,
+            "model_text":str(answer),"trace":analysis.calls[start:],"task_kind":"conversation",
+            "hotspots":deepcopy(previous_hotspots)}
     search_calls=[c for c in analysis.calls[start:] if c['tool']=='search_road_policy' and c['result'].get('status') in ('ok','no_results')]
     # Project discussion uses the road's own context, including both internal
     # comparisons; it does not inherit a different road from a previous plan.
